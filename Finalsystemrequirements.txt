@@ -1,0 +1,55 @@
+import cv2
+
+def initialize_camera():
+    """ Try to initialize the camera and handle cases where the default camera is not available. """
+    for index in range(10):  # Check the first 10 indices.
+        cap = cv2.VideoCapture(index)
+        if cap.isOpened():
+            print(f"Camera initialized on index {index}")
+            return cap
+    print("Failed to initialize any camera. Please check your device.")
+    return None
+
+try:
+    # Load the pre-trained Haar Cascade classifier for face detectiosn
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    if face_cascade.empty():
+        raise IOError('Unable to load the face cascade classifier.')
+
+    # Initialize the video capture object to capture video from the webcam
+    cap = initialize_camera()
+    if cap is None:
+        exit(1)  # Exit if no camera was initialized
+
+    while True:
+        # Read a frame from the video capture
+        ret, frame = cap.read()
+        if not ret:
+            print("Failed to read from the camera. Exiting...")
+            break
+
+        # Convert the frame to grayscale (Haar Cascade works on grayscale images)
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        # Detect faces in the grayscale frame
+        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+
+        # Draw rectangles around the detected faces
+        for (x, y, w, h) in faces:
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+
+        # Display the frame with the detected faces
+        cv2.imshow('Face Detection', frame)
+
+        # Break the loop if the 'q' key is pressed
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+except Exception as e:
+    print(f"An error occurred: {e}")
+
+finally:
+    # Release the video capture object and close all OpenCV windows
+    if 'cap' in locals() and cap is not None:
+        cap.release()
+    cv2.destroyAllWindows()
